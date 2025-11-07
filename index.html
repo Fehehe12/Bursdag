@@ -79,7 +79,7 @@
     #hero img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
     #heroSharp{ z-index:1; }
     #heroMelt{ opacity:0; filter:url(#melt); transition:opacity .6s ease; }
-    .melt-on #heroMelt{ opacity:0.45; } /* subtil – personen synlig */
+    .melt-on #heroMelt{ opacity:0.5; } /* mer synlig smelt (tidl. 0.45) */
 
     /* Neon inni kortet */
     #neon{
@@ -176,14 +176,20 @@
       to  { transform:scale(1.30); opacity:0; }
     }
 
-    /* Tekst over bildet (forankret til bildet) */
+    /* Tekst over bildet (forankret til bildet) – tydelig uansett bakgrunn */
     #dropMsg{
       position:absolute; left:50%; bottom:calc(100% + 12px); transform:translateX(-50%);
       font-weight:900; text-align:center; line-height:1.1; letter-spacing:.5px;
       font-size:clamp(22px, 4.8vw, 54px);
       opacity:0; z-index:6; pointer-events:none;
-      mix-blend-mode:screen;
-      text-shadow:0 0 10px rgba(255,255,255,.9), 0 0 24px rgba(255,0,153,.7), 0 0 40px rgba(255,255,0,.5);
+      color:#fff;
+      /* solid kontur + sterke skygger for lesbarhet */
+      -webkit-text-stroke: 2px rgba(0,0,0,.55);
+      text-shadow:
+        0 0 10px rgba(255,255,255,.85),
+        0 0 24px rgba(255,0,153,.75),
+        0 0 40px rgba(255,255,0,.65),
+        0 2px 14px rgba(0,0,0,.65);
       transition:opacity .3s ease;
       white-space:nowrap;
     }
@@ -195,7 +201,7 @@
     }
     @keyframes msgPulse{ from{ transform:translateX(-50%) scale(1.0); } to{ transform:translateX(-50%) scale(1.06); } }
 
-    /* Gnister & konfetti */
+    /* Partikler */
     #sparks{ position:fixed; inset:0; pointer-events:none; z-index:3; }
     .spark{
       position:fixed; left:50%; top:50%; width:6px; height:6px; border-radius:50%;
@@ -217,9 +223,6 @@
       0%   { transform: translate(var(--x), -10vh) rotate(0deg); opacity:1; }
       100% { transform: translate(var(--x), 110vh) rotate(540deg); opacity:0.9; }
     }
-
-    /* Flash */
-    @keyframes flashPop{ 0%{ opacity:.9; } 100%{ opacity:0; } }
   </style>
 </head>
 <body>
@@ -399,7 +402,10 @@
       dropMsg.classList.remove('blink'); void dropMsg.offsetWidth; dropMsg.classList.add('blink');
 
       aura.classList.remove('boom'); void aura.offsetWidth; aura.classList.add('boom');
-      spawnSparks(stage === 2 ? 14 : 10, stage === 2 ? 180 : 140);
+      spawnSparks(stage === 2 ? 16 : 10, stage === 2 ? 190 : 140);
+
+      // gi melt et ekstra “punch” pr beat
+      beatPulse += (stage === 2 ? 9 : 6);
 
       if(stage === 1){
         hero.classList.remove('beat1'); void hero.offsetWidth; hero.classList.add('beat1');
@@ -430,7 +436,7 @@
         const y = H/2 + Math.sin(t * 0.85) * ampY;
         heroShell.style.left = x.toFixed(1) + 'px';
         heroShell.style.top  = y.toFixed(1) + 'px';
-        const scale = lerp(0.18, 0.98, Math.min(1, t / DROP1));
+        const scale = Math.max(0.18, 0.98 * Math.min(1, t / DROP1));
         heroShell.style.transform = `translate(-50%,-50%) scale(${scale.toFixed(3)})`;
         hero.classList.remove('beat1','beat2');
 
@@ -451,7 +457,7 @@
             aura.classList.add('boom');
             spawnSparks(16, 160);
             screenFlash();
-            dropMsg.classList.add('show');               // vis tekst rett over bildet
+            dropMsg.classList.add('show');               // vis tekst rett over bildet (drop 1)
           }
         }
 
@@ -470,20 +476,21 @@
           document.body.classList.add('drop2-mode');
           for(let i=0;i<3;i++){ aura.classList.remove('boom'); void aura.offsetWidth; aura.classList.add('boom'); }
           screenFlash();
-          spawnSparks(28, 240);
-          spawnConfetti(32);
+          spawnSparks(32, 240);
+          spawnConfetti(36);
           const meltLayer = document.querySelector('#hero.melt-on #heroMelt');
           if(meltLayer) meltLayer.style.opacity = '0.6'; // litt mer uten å “ta over”
         }
       }
 
-      // Smelte-animasjon (subtil, levende)
+      // Smelte-animasjon (tydeligere + beat-koblet)
       if(meltOn){
         const now = performance.now()/1000;
         const dt  = Math.max(0, now - meltStart);
-        const baseScale = Math.min(16, dt * 7);
+        // mer grunnstyrke + beatPulse for punch
+        const baseScale = Math.min(stage === 2 ? 26 : 20, dt * (stage === 2 ? 10 : 8));
         beatPulse *= 0.90;
-        const wiggle = 3.5 * Math.sin((t - DROP1) * 2.0);
+        const wiggle = (stage === 2 ? 4.5 : 3.5) * Math.sin((t - DROP1) * 2.0);
         const scale  = Math.max(0, baseScale + beatPulse + wiggle);
         disp.setAttribute('scale', scale.toFixed(1));
         const fx = 0.008 + 0.004 * (0.5 + 0.5 * Math.sin((t - DROP1) * 0.9));
