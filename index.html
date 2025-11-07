@@ -6,7 +6,7 @@
   <title>Bursdag! 🎉</title>
   <style>
     /* ——— Grunnoppsett ——— */
-    :root{ --glow: rgba(255,255,255,0.9); }
+    :root{ --glow: rgba(255,255,255,0.9); --bpm:122; }
     html,body{ height:100%; margin:0; background:#000; overflow:hidden; }
     body{ font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial; color:#fff; }
 
@@ -35,22 +35,21 @@
         radial-gradient(30% 30% at 80% 25%, rgba(255,0,153,0.60), transparent 60%),
         radial-gradient(28% 28% at 50% 80%, rgba(255,255,0,0.55), transparent 60%),
         conic-gradient(from 0deg at 50% 50%, rgba(0,255,255,0.25), rgba(255,0,255,0.25), rgba(255,255,0,0.25), rgba(0,255,255,0.25));
-      filter: blur(22px) saturate(1.9) brightness(1.2); }
+      filter: blur(22px) saturate(1.9) brightness(1.2); transition:filter 160ms ease; }
 
-    /* ——— BEAT-PULS ——— */
-    #hero::after{ content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; border:3px solid rgba(255,255,255,0.85); opacity:0; transform:scale(1); }
-    #hero.beat{ animation:shake 120ms ease-in-out; }
-    #hero.beat::after{ animation:pulseRing 280ms ease-out; }
-    #hero.beat #neon{ filter: blur(26px) saturate(2.15) brightness(1.35); }
-    #hero.beat #heroSharp{ filter:contrast(1.06) saturate(1.08); }
+    /* ——— SMOOTH BEAT: myk risting (uten zoom) ——— */
+    #hero.beat{ animation: smoothShake calc(60s / var(--bpm)) cubic-bezier(.25,.9,.2,1); }
+    #hero.beat #neon{ filter: blur(24px) saturate(2.0) brightness(1.2); }
 
-    @keyframes pulseRing{ from{ opacity:.9; transform:scale(1);} to{ opacity:0; transform:scale(1.28);} }
-    @keyframes shake{
-      0%{   transform:translate(-50%,-50%) scale(1.05) rotate(-0.4deg); }
-      25%{  transform:translate(calc(-50% - 4px), calc(-50% + 2px)) scale(1.03) rotate(0.6deg); }
-      50%{  transform:translate(calc(-50% + 3px), calc(-50% - 3px)) scale(1.06) rotate(-0.5deg); }
-      75%{  transform:translate(calc(-50% - 2px), calc(-50% - 1px)) scale(1.03) rotate(0.3deg); }
-      100%{ transform:translate(-50%,-50%) scale(1.05) rotate(0deg); }
+    @keyframes smoothShake{
+      /* ingen skalering – kun milde mikro-bevegelser og rotasjon */
+      0%   { transform:translate(-50%,-50%) rotate(0deg); filter:blur(0px); }
+      15%  { transform:translate(calc(-50% - 1.2px), calc(-50% + 0.6px)) rotate(0.18deg); filter:blur(0.25px); }
+      30%  { transform:translate(calc(-50% + 0.8px),  calc(-50% - 1.0px)) rotate(-0.22deg); filter:blur(0.35px); }
+      45%  { transform:translate(calc(-50% + 1.6px),  calc(-50% + 0.4px)) rotate(0.15deg); filter:blur(0.25px); }
+      60%  { transform:translate(calc(-50% - 0.9px),  calc(-50% - 0.6px)) rotate(-0.12deg); filter:blur(0.15px); }
+      75%  { transform:translate(calc(-50% + 0.5px),  calc(-50% + 0.2px)) rotate(0.06deg);  filter:blur(0.05px); }
+      100% { transform:translate(-50%,-50%) rotate(0deg); filter:blur(0px); }
     }
 
     /* Neon aktiveres etter dropp */
@@ -65,8 +64,8 @@
       font-weight:900; font-size:clamp(20px,4.5vw,58px); text-transform:uppercase; text-shadow:0 2px 10px rgba(0,0,0,.6), 0 0 12px rgba(255,255,255,.5); }
     #bigBox .small{ display:block; font-size:clamp(16px,2.6vw,30px); opacity:.95; margin-top:.35em; }
     #bigBox.show{ opacity:1; transform:translate(-50%, 0%) scale(1); transition:opacity .6s ease, transform .6s ease; }
-    #bigBox.beat{ animation:boxBeat 220ms ease-out; }
-    @keyframes boxBeat{ from{ transform:translate(-50%, 0%) scale(1.02)} to{ transform:translate(-50%, 0%) scale(1)} }
+    #bigBox.beat{ animation: boxNod calc(60s / var(--bpm)) ease-out; }
+    @keyframes boxNod{ 0%{transform:translate(-50%,0) scale(1)} 40%{transform:translate(-50%,0) scale(1.01)} 100%{transform:translate(-50%,0) scale(1)} }
 
     /* ——— Kontroller ——— */
     #soundBtn{ position:fixed; left:50%; bottom:24px; transform:translateX(-50%); padding:12px 18px; border:0; border-radius:999px; cursor:pointer; z-index:10; background:rgba(255,255,255,0.92); color:#111; box-shadow:0 10px 30px rgba(0,0,0,.25); font-weight:700; }
@@ -89,7 +88,7 @@
     <div id="neon"></div>
   </div>
 
-  <!-- Stor tekstboks -->
+  <!-- Stor festboks -->
   <div id="bigBox">
     GRALLA ME DAGEN HINNA!<br>
     <span class="small">FREDAG! KOS DEG SOM FAEN!</span>
@@ -112,7 +111,7 @@
     // KONFIG
     const YT_VIDEO_ID = 'NYVg-V8-7q0';
     const DROP_TIME   = 85.5; // sek
-    const BPM         = 122;
+    const BPM         = 122;  document.documentElement.style.setProperty('--bpm', BPM);
 
     if(location.protocol === 'file:'){
       const hint = document.createElement('div');
@@ -168,23 +167,18 @@
         if(!hero.classList.contains('neon-active')) hero.classList.add('neon-active');
         if(!meltOn){
           meltOn = true; meltStart = performance.now()/1000; hero.classList.add('melt-active');
-          // Vis stor tekstboks
           bigBox.classList.add('show');
-          // Etter en kort stund: full melt (skjul skarpt lag)
-          if(!fullMeltTimerStarted){
-            fullMeltTimerStarted = true;
-            setTimeout(()=>{ hero.classList.add('full-melt'); }, 1100);
-          }
+          if(!fullMeltTimerStarted){ fullMeltTimerStarted = true; setTimeout(()=>{ hero.classList.add('full-melt'); }, 1100); }
         }
 
-        // Beat-puls (på hero + boks)
+        // Smooth beat (uten zoom)
         if(lastBeat === 0){ lastBeat = t; hero.classList.remove('beat'); bigBox.classList.remove('beat'); }
         if(t - lastBeat >= beatInterval){
           const skips = Math.max(1, Math.floor((t - lastBeat) / beatInterval));
           lastBeat += beatInterval * skips;
           hero.classList.remove('beat'); void hero.offsetWidth; hero.classList.add('beat');
           bigBox.classList.remove('beat'); void bigBox.offsetWidth; bigBox.classList.add('beat');
-          beatPulse = 12; // ring/glow-boost per beat
+          beatPulse = 10;
         }
       }
 
