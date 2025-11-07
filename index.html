@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bursdag! 🎉</title>
+  <style>
+    /* ——— Grunnoppsett ——— */
+    :root{ --glow: rgba(255,255,255,0.9); }
+    html,body{ height:100%; margin:0; background:#000; overflow:hidden; }
+    body{ font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial; color:#fff; }
+
+    /* ——— YouTube som fullskjerms bakgrunn ——— */
+    .video-bg{
+      position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
+    }
+    .video-bg iframe{ 
+      position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
+      /* Cover-triks: behold 16:9 og dekk hele skjermen */
+      width:177.78vh; height:100vh; /* 100 * 16/9 = 177.78 */
+      min-width:100vw; min-height:56.25vw; /* 100 * 9/16 = 56.25 */
+    }
+
+    /* ——— HERO (wrapper + bilde + neon) ——— */
+    #hero{
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.15);
+      width:50vmin; height:50vmin; border-radius:16px; overflow:hidden; z-index:2;
+      box-shadow:0 0 0 rgba(255,255,255,0);
+      transition:box-shadow 0.18s ease-out, filter 0.18s ease-out;
+      will-change:transform, box-shadow, filter;
+    }
+    #hero img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+    /* Neon overlay: flere lag av radial/conic-gradients som flyter og bytter farge */
+    #neon{
+      position:absolute; inset:-12%; border-radius:inherit; pointer-events:none;
+      mix-blend-mode:screen; opacity:0; /* blir 1 ved dropp */
+      background:
+        radial-gradient(35% 35% at 20% 30%, rgba(0,255,213,0.65), transparent 60%),
+        radial-gradient(30% 30% at 80% 25%, rgba(255,0,153,0.60), transparent 60%),
+        radial-gradient(28% 28% at 50% 80%, rgba(255,255,0,0.55), transparent 60%),
+        conic-gradient(from 0deg at 50% 50%, rgba(0,255,255,0.25), rgba(255,0,255,0.25), rgba(255,255,0,0.25), rgba(0,255,255,0.25));
+      filter: blur(22px) saturate(1.9) brightness(1.2);
+    }
+
+    /* Beat/glow ved puls */
+    #hero.beat{
+      box-shadow:0 0 45px 15px rgba(255,255,255,0.75), 0 0 90px rgba(255,0,0,0.28), 0 0 120px rgba(255,255,0,0.2);
+      animation:shake 120ms ease-in-out;
+    }
+    @keyframes shake{
+      0%{   transform:translate(-50%,-50%) scale(1.05) rotate(-0.4deg); }
+      25%{  transform:translate(calc(-50% - 4px), calc(-50% + 2px)) scale(1.03) rotate(0.6deg); }
+      50%{  transform:translate(calc(-50% + 3px), calc(-50% - 3px)) scale(1.06) rotate(-0.5deg); }
+      75%{  transform:translate(calc(-50% - 2px), calc(-50% - 1px)) scale(1.03) rotate(0.3deg); }
+      100%{ transform:translate(-50%,-50%) scale(1.05) rotate(0deg); }
+    }
+
+    /* Flytende neon: posisjon + hue-rotasjon aktiveres etter dropp */
+    .neon-active #neon{
+      opacity:1;
+      animation:
+        neonFlow 5.2s linear infinite,
+        neonHue 6.5s linear infinite;
+    }
+    @keyframes neonFlow{
+      0%{   background-position: 0% 0%, 100% 0%, 50% 100%, 50% 50%; }
+      25%{  background-position: 50% 50%, 50% 100%, 0% 50%, 50% 50%; }
+      50%{  background-position: 100% 0%, 0% 100%, 50% 0%, 50% 50%; }
+      75%{  background-position: 50% 50%, 100% 50%, 100% 100%, 50% 50%; }
+      100%{ background-position: 0% 0%, 100% 0%, 50% 100%, 50% 50%; }
+    }
+    @keyframes neonHue{
+      0%{   filter: hue-rotate(0deg)   blur(22px) saturate(1.9) brightness(1.2); }
+      100%{ filter: hue-rotate(360deg) blur(22px) saturate(1.9) brightness(1.2); }
+    }
+
+    /* ——— Kontroller ——— */
+    #soundBtn{
+      position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+      padding:12px 18px; border:0; border-radius:999px; cursor:pointer; z-index:10;
+      background:rgba(255,255,255,0.92); color:#111; box-shadow:0 10px 30px rgba(0,0,0,.25);
+      font-weight:700;
+    }
+    #soundBtn.hide{ opacity:0; transform:translate(-50%, 10px); pointer-events:none; transition:all .28s ease; }
+
+    #imgBtn{
+      position:fixed; left:20px; bottom:20px; z-index:10; padding:8px 12px;
+      border:0; border-radius:10px; cursor:pointer; background:rgba(255,255,255,0.85); color:#111; font-weight:600;
+      box-shadow:0 8px 24px rgba(0,0,0,.3);
+    }
+
+    .banner{ position:fixed; top:20px; left:50%; transform:translateX(-50%); padding:8px 12px;
+      background:linear-gradient( to bottom, rgba(0,0,0,.55), rgba(0,0,0,.25) ); border-radius:10px; 
+      font-weight:600; letter-spacing:.3px; z-index:2; }
+
+    #localHint{ position:fixed; right:16px; top:16px; z-index:3; font-size:12px; opacity:.85;
+      background:rgba(0,0,0,.6); padding:6px 8px; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <div class="banner">Gratulerer med dagen! 🎉</div>
+
+  <!-- Bakgrunnsvideo -->
+  <div class="video-bg"><div id="player"></div></div>
+
+  <!-- HERO med bilde og neon-oversminke -->
+  <div id="hero">
+    <img id="heroImage" src="kristian.jpg" alt="Bursdagsbarnet" />
+    <div id="neon"></div>
+  </div>
+
+  <button id="soundBtn" type="button">Start musikk 🔊</button>
+
+
+
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    // ————————————————————————————————————————————————
+    // KONFIG (satt etter din video):
+    // Video: https://www.youtube.com/watch?v=NYVg-V8-7q0
+    // Drop: 1 min 25,5 sek (85.5s)
+    // BPM: 122
+    // ————————————————————————————————————————————————
+    const YT_VIDEO_ID = 'NYVg-V8-7q0';
+    const DROP_TIME   = 85.5; // sekunder
+    const BPM         = 122;  // ca. tempo etter dropp
+
+    // Varsel hvis file://
+    if(location.protocol === 'file:'){
+      const hint = document.createElement('div');
+      hint.id = 'localHint';
+      hint.textContent = 'Tips: Kjør via en lokal server (Live Server eller python -m http.server) for lyd/autoplay.';
+      document.body.appendChild(hint);
+    }
+
+    // ——— YouTube Player ———
+    let player; 
+    function onYouTubeIframeAPIReady(){
+      player = new YT.Player('player', {
+        videoId: YT_VIDEO_ID,
+        playerVars: {
+          autoplay: 1, controls: 0, mute: 1, start: 0, rel: 0,
+          modestbranding: 1, playsinline: 1, loop: 1, playlist: YT_VIDEO_ID
+        },
+        events: { onReady: onPlayerReady, onStateChange: onPlayerStateChange }
+      });
+    }
+    function onPlayerReady(){
+      try { player.getIframe().setAttribute('allow', 'autoplay; encrypted-media'); } catch(e){}
+      player.playVideo();
+      tick();
+    }
+    function onPlayerStateChange(e){ if(e.data === YT.PlayerState.ENDED) player.playVideo(); }
+
+    // ——— Kontroller ———
+    const soundBtn = document.getElementById('soundBtn');
+    function enableSound(){
+      if(!player) return;
+      try{
+        player.mute(); player.playVideo(); player.unMute(); player.setVolume(100); player.playVideo();
+      }catch(err){}
+      soundBtn.classList.add('hide');
+      window.removeEventListener('touchstart', enableSound);
+    }
+    soundBtn.addEventListener('click', enableSound);
+    window.addEventListener('touchstart', enableSound, { once:true });
+
+    // ——— DOM: hero/bilde ———
+    const hero = document.getElementById('hero');
+    const img  = document.getElementById('heroImage');
+    const neon = document.getElementById('neon');
+
+    const imgBtn = document.getElementById('imgBtn');
+    const imgInput = document.getElementById('imgInput');
+    imgBtn.addEventListener('click', ()=> imgInput.click());
+    imgInput.addEventListener('change', (e)=>{
+      const file = e.target.files && e.target.files[0];
+      if(!file) return;
+      const url = URL.createObjectURL(file);
+      img.src = url; imgBtn.textContent = 'Bytt bilde';
+    });
+
+    // ——— Beat + neon ———
+    const beatInterval = 60 / BPM; // sekunder per beat
+    let lastBeat = 0;
+
+    function lerp(a,b,t){ return a + (b - a) * t; }
+
+    function tick(){
+      if(!player || typeof player.getCurrentTime !== 'function'){ return requestAnimationFrame(tick); }
+      const t = player.getCurrentTime();
+
+      // Før droppet: skaler HERO jevnt fra 0.15 → 1.00
+      if(t < DROP_TIME){
+        const p = Math.min(1, t / DROP_TIME);
+        const scale = lerp(0.15, 1.00, p);
+        hero.style.transform = `translate(-50%,-50%) scale(${scale.toFixed(3)})`;
+        hero.classList.remove('beat');
+      } else {
+        // Slå på neon når droppet inntreffer (kun én gang)
+        if(!hero.classList.contains('neon-active')){
+          hero.classList.add('neon-active');
+        }
+        // Pulser i takt med BPM (approx)
+        if(lastBeat === 0){ lastBeat = t; hero.classList.remove('beat'); }
+        if(t - lastBeat >= beatInterval){
+          const skips = Math.max(1, Math.floor((t - lastBeat) / beatInterval));
+          lastBeat += beatInterval * skips;
+          hero.classList.remove('beat'); void hero.offsetWidth; hero.classList.add('beat');
+        }
+      }
+      requestAnimationFrame(tick);
+    }
+  </script>
+</body>
+</html>
