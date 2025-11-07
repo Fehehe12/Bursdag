@@ -64,22 +64,21 @@
       position:fixed; left:50%; top:50%;
       transform:translate(-50%,-50%) scale(0.18);
       z-index:4;
-      transition:
-        left .6s ease-in, top .6s ease-in,
-        transform 0.12s ease-out;
+      transition: left .6s ease-in, top .6s ease-in, transform 0.12s ease-out;
       will-change: left, top, transform;
     }
 
-    /* Selve kortet (klipp, neon, beats) */
+    /* Kortet (klipp, neon, beats) */
     #hero{
       position:relative; width:50vmin; height:50vmin; border-radius:16px; overflow:hidden;
       transition: box-shadow 0.18s ease-out, filter 0.18s ease-out;
       will-change: box-shadow, filter, transform;
     }
     #hero img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+    /* VIKTIG: melt-laget over det skarpe, så du faktisk ser smelteeffekten */
     #heroSharp{ z-index:1; }
-    #heroMelt{ opacity:0; filter:url(#melt); transition:opacity .6s ease; }
-    .melt-on #heroMelt{ opacity:0.5; } /* mer synlig smelt (tidl. 0.45) */
+    #heroMelt { z-index:2; opacity:0; filter:url(#melt); transition:opacity .6s ease; }
+    .melt-on #heroMelt{ opacity:0.5; } /* moderat, personen er fortsatt tydelig */
 
     /* Neon inni kortet */
     #neon{
@@ -176,24 +175,24 @@
       to  { transform:scale(1.30); opacity:0; }
     }
 
-    /* Tekst over bildet (forankret til bildet) – tydelig uansett bakgrunn */
+    /* Tekst over bildet (forankret til bildet) */
     #dropMsg{
       position:absolute; left:50%; bottom:calc(100% + 12px); transform:translateX(-50%);
       font-weight:900; text-align:center; line-height:1.1; letter-spacing:.5px;
       font-size:clamp(22px, 4.8vw, 54px);
       opacity:0; z-index:6; pointer-events:none;
       color:#fff;
-      /* solid kontur + sterke skygger for lesbarhet */
       -webkit-text-stroke: 2px rgba(0,0,0,.55);
       text-shadow:
         0 0 10px rgba(255,255,255,.85),
         0 0 24px rgba(255,0,153,.75),
         0 0 40px rgba(255,255,0,.65),
         0 2px 14px rgba(0,0,0,.65);
-      transition:opacity .3s ease;
+      transition:opacity .28s ease;
       white-space:nowrap;
     }
     #dropMsg.show{ opacity:1; }
+    #dropMsg.mega{ font-size:clamp(26px, 6.5vw, 68px); -webkit-text-stroke:3px rgba(0,0,0,.6);}
     #dropMsg.blink{
       color:hsl(var(--h,0) 100% 65%);
       filter:brightness(1.25) saturate(1.4);
@@ -236,20 +235,16 @@
 
   <!-- HERO SHELL (flytter/skalere før dropp) -->
   <div id="heroShell">
-    <!-- Selve kortet med smelte + skarp + neon -->
     <div id="hero">
+      <!-- SMELT OVER SHARP -->
       <img id="heroMelt"  src="kristian.jpg" alt="Bursdagsbarnet" />
       <img id="heroSharp" src="kristian.jpg" alt="Bursdagsbarnet" />
       <div id="neon"></div>
-      <!-- Tekst forankret til bildet, over kortet -->
       <div id="dropMsg">GRALLA ME DAGEN HINNA!</div>
     </div>
   </div>
 
-  <!-- Partikler -->
   <div id="sparks"></div>
-
-  <!-- 3-2-1 countdown -->
   <div id="countdown"></div>
 
   <!-- SVG-filter for smelte-effekt -->
@@ -262,17 +257,16 @@
     </defs>
   </svg>
 
-  <!-- Lydknapp -->
   <button id="soundBtn" type="button">Start musikk 🔊</button>
 
   <!-- YouTube Iframe API -->
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
     /* KONFIG */
-    const YT_VIDEO_ID = 'NYVg-V8-7q0'; // YouTube-ID
-    const DROP1 = 85.5;                // Første dropp (1:25.5)
-    const DROP2 = 180.5;               // Andre dropp (3:00.5)
-    const BPM   = 122;                 // Beat etter dropp
+    const YT_VIDEO_ID = 'NYVg-V8-7q0';
+    const DROP1 = 85.5;    // 1:25.5
+    const DROP2 = 180.5;   // 3:00.5
+    const BPM   = 122;
     document.documentElement.style.setProperty('--bpm', BPM);
 
     /* YouTube player */
@@ -294,7 +288,7 @@
     }
     function onPlayerStateChange(e){ if(e.data === YT.PlayerState.ENDED) player.playVideo(); }
 
-    /* Robust lyd-unlock */
+    /* Lyd-unlock */
     const soundBtn = document.getElementById('soundBtn');
     async function unlockAudio(){
       if(!player || typeof player.playVideo !== 'function') return;
@@ -332,10 +326,11 @@
     const beatInterval = 60 / BPM;
     let lastBeat = 0;
     let meltOn = false, meltStart = 0, beatPulse = 0;
-    let stage = 0; // 0: pre-DROP1, 1: mellom drop1-2, 2: etter drop2
+    let stage = 0; // 0: pre-DROP1, 1: mellom, 2: etter DROP2
     let drop2Armed = false;
     let hue = 0;
     let countdownArmed = false;
+    let msgTimer = null;
 
     const lerp = (a,b,t)=> a + (b - a) * t;
 
@@ -381,7 +376,7 @@
       flash.classList.remove('pop'); void flash.offsetWidth; flash.classList.add('pop');
     }
 
-    /* 3-2-1 countdown styrt av DROP1 */
+    /* 3-2-1 countdown før DROP1 */
     function armCountdown(){
       if(countdownArmed) return;
       countdownArmed = true;
@@ -395,7 +390,7 @@
       setTimeout(()=>show(1), 2000);
     }
 
-    /* Beat trigger – to varianter (beat1 / beat2) + tekstblink */
+    /* Beat trigger – to varianter */
     function triggerBeat(){
       hue = (hue + 37) % 360;
       dropMsg.style.setProperty('--h', hue);
@@ -420,6 +415,14 @@
       setTimeout(()=>{ heroShell.style.transform = 'translate(-50%,-50%) scale(1)'; }, 280);
     }
 
+    /* Vis/skjul drop-tekst (brukes på dropp 1 og 2) */
+    function showDropMsg({mega=false, duration=5000} = {}){
+      if(mega) dropMsg.classList.add('mega'); else dropMsg.classList.remove('mega');
+      dropMsg.classList.add('show');
+      if(msgTimer) clearTimeout(msgTimer);
+      msgTimer = setTimeout(()=> dropMsg.classList.remove('show'), duration);
+    }
+
     function tick(){
       if(!player || typeof player.getCurrentTime !== 'function'){ return requestAnimationFrame(tick); }
       const t = player.getCurrentTime();
@@ -429,7 +432,7 @@
 
       if(t < DROP1){
         stage = 0;
-        // Orbiter + myk skalering
+        // Flyt rundt skjermen + myk skalering
         const W = window.innerWidth, H = window.innerHeight, S = Math.min(W,H);
         const ampX = 0.28 * S, ampY = 0.20 * S;
         const x = W/2 + Math.cos(t * 0.60) * ampX;
@@ -446,8 +449,8 @@
           stage = 1;
           heroShell.style.left = '50%';
           heroShell.style.top  = '50%';
-          heroShell.style.transform = 'translate(-50%,-50%) scale(1)'; // sett til 1
-          dipHeroShell(); // liten “dip” akkurat på dropp
+          heroShell.style.transform = 'translate(-50%,-50%) scale(1)';
+          dipHeroShell();
 
           if(!hero.classList.contains('neon-active')) hero.classList.add('neon-active');
           if(!meltOn){
@@ -457,7 +460,7 @@
             aura.classList.add('boom');
             spawnSparks(16, 160);
             screenFlash();
-            dropMsg.classList.add('show');               // vis tekst rett over bildet (drop 1)
+            showDropMsg({ mega:false, duration:4500 });  // vis tekst (drop 1), skjul etter litt
           }
         }
 
@@ -469,7 +472,7 @@
           triggerBeat();
         }
 
-        // Bytt til “drop2-mode” og hardere effekter ved DROP2
+        // DROP 2: skru opp alt + vis teksten igjen (“mega”)
         if(t >= DROP2 && !drop2Armed){
           drop2Armed = true;
           stage = 2;
@@ -478,16 +481,17 @@
           screenFlash();
           spawnSparks(32, 240);
           spawnConfetti(36);
-          const meltLayer = document.querySelector('#hero.melt-on #heroMelt');
-          if(meltLayer) meltLayer.style.opacity = '0.6'; // litt mer uten å “ta over”
+          const meltLayer = document.getElementById('heroMelt');
+          if(meltLayer) meltLayer.style.opacity = '0.6';
+          showDropMsg({ mega:true, duration:6000 });     // VIS IGJEN PÅ DROPP 2
         }
       }
 
-      // Smelte-animasjon (tydeligere + beat-koblet)
+      // Smelte-animasjon (tydelig + beat-koblet)
       if(meltOn){
         const now = performance.now()/1000;
         const dt  = Math.max(0, now - meltStart);
-        // mer grunnstyrke + beatPulse for punch
+        // Grunnstyrke + beatPulse gir dynamikk
         const baseScale = Math.min(stage === 2 ? 26 : 20, dt * (stage === 2 ? 10 : 8));
         beatPulse *= 0.90;
         const wiggle = (stage === 2 ? 4.5 : 3.5) * Math.sin((t - DROP1) * 2.0);
