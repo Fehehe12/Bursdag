@@ -26,12 +26,25 @@
       position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.15);
       width:50vmin; height:50vmin; border-radius:16px; overflow:hidden; z-index:2;
       box-shadow:0 0 0 rgba(255,255,255,0);
-      transition:box-shadow 0.18s ease-out, filter 0.18s ease-out;
+      transition:box-shadow 0.18s ease-out, filter 0.18s ease-out, transform 0.12s ease-out;
       will-change:transform, box-shadow, filter;
     }
-    #hero img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
-    #heroMelt{ opacity:0; filter:url(#melt); }
+    #hero img{
+      position:absolute; inset:0;
+      width:100%; height:100%; object-fit:cover; display:block;
+    }
+    /* Melt-laget – får filter, men lav opacity (slik at man fortsatt ser personen) */
+    #heroMelt{
+      opacity:0;
+      filter:url(#melt);
+      transition:opacity .6s ease;
+    }
     #heroSharp{ z-index:1; }
+
+    /* Når droppet kommer: slå på subtil melt */
+    .melt-on #heroMelt{
+      opacity:0.5; /* juster til 0.3–0.6 hvis du vil ha mindre/mer melt */
+    }
 
     /* Neon overlay (flyter og hue-roterer etter dropp) */
     #neon{
@@ -43,19 +56,54 @@
         radial-gradient(28% 28% at 50% 80%, rgba(255,255,0,0.55), transparent 60%),
         conic-gradient(from 0deg at 50% 50%, rgba(0,255,255,0.25), rgba(255,0,255,0.25), rgba(255,255,0,0.25), rgba(0,255,255,0.25));
       filter: blur(22px) saturate(1.9) brightness(1.2);
+      transition:filter 0.16s ease;
     }
 
-    /* ——— BEAT-PULS (sterkere): ring + neon-pop + micro-zoom ——— */
+    /* ——— Fargede kanter som beater i takt ——— */
     #hero::after{
-      content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
-      border:3px solid rgba(255,255,255,0.85); opacity:0; transform:scale(1);
+      content:"";
+      position:absolute;
+      inset:-3px;
+      border-radius:inherit;
+      pointer-events:none;
+      opacity:0;
+      /* Neonfarget kant (syns best når beat trigges) */
+      background:
+        conic-gradient(
+          from 0deg,
+          rgba(0,255,213,0.0),
+          rgba(0,255,213,0.85),
+          rgba(255,0,153,0.85),
+          rgba(255,255,0,0.85),
+          rgba(0,255,213,0.0)
+        );
+      filter:blur(4px);
     }
-    #hero.beat{ animation:shake 120ms ease-in-out; }
-    #hero.beat::after{ animation:pulseRing 280ms ease-out; }
-    #hero.beat #neon{ filter: blur(26px) saturate(2.15) brightness(1.35); }
-    #hero.beat #heroSharp{ filter:contrast(1.06) saturate(1.08); }
 
-    @keyframes pulseRing{ from{ opacity:.9; transform:scale(1);} to{ opacity:0; transform:scale(1.28);} }
+    /* Beat/glow ved puls */
+    #hero.beat{
+      box-shadow:
+        0 0 35px 10px rgba(0,255,213,0.8),
+        0 0 70px 18px rgba(255,0,153,0.6),
+        0 0 110px 24px rgba(255,255,0,0.45);
+      animation:shake 120ms ease-in-out;
+      filter:saturate(1.12) contrast(1.05);
+    }
+    #hero.beat::after{
+      opacity:1;
+      animation:pulseRing 260ms ease-out;
+    }
+    #hero.beat #neon{
+      filter: blur(26px) saturate(2.15) brightness(1.35);
+    }
+    #hero.beat #heroSharp{
+      filter:contrast(1.06) saturate(1.08);
+    }
+
+    @keyframes pulseRing{
+      from{ transform:scale(1);   opacity:1; }
+      to  { transform:scale(1.18); opacity:0; }
+    }
     @keyframes shake{
       0%{   transform:translate(-50%,-50%) scale(1.05) rotate(-0.4deg); }
       25%{  transform:translate(calc(-50% - 4px), calc(-50% + 2px)) scale(1.03) rotate(0.6deg); }
@@ -76,14 +124,29 @@
       75%{  background-position: 50% 50%, 100% 50%, 100% 100%, 50% 50%; }
       100%{ background-position: 0% 0%, 100% 0%, 50% 100%, 50% 50%; }
     }
-    @keyframes neonHue{ 0%{ filter: hue-rotate(0deg)   blur(22px) saturate(1.9) brightness(1.2); } 100%{ filter: hue-rotate(360deg) blur(22px) saturate(1.9) brightness(1.2); } }
+    @keyframes neonHue{
+      0%{   filter: hue-rotate(0deg)   blur(22px) saturate(1.9) brightness(1.2); }
+      100%{ filter: hue-rotate(360deg) blur(22px) saturate(1.9) brightness(1.2); }
+    }
 
     /* ——— Kontroller ——— */
-    #soundBtn{ position:fixed; left:50%; bottom:24px; transform:translateX(-50%); padding:12px 18px; border:0; border-radius:999px; cursor:pointer; z-index:10; background:rgba(255,255,255,0.92); color:#111; box-shadow:0 10px 30px rgba(0,0,0,.25); font-weight:700; }
+    #soundBtn{
+      position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+      padding:12px 18px; border:0; border-radius:999px; cursor:pointer; z-index:10;
+      background:rgba(255,255,255,0.92); color:#111; box-shadow:0 10px 30px rgba(0,0,0,.25);
+      font-weight:700;
+    }
     #soundBtn.hide{ opacity:0; transform:translate(-50%, 10px); pointer-events:none; transition:all .28s ease; }
 
-    .banner{ position:fixed; top:20px; left:50%; transform:translateX(-50%); padding:8px 12px; background:linear-gradient( to bottom, rgba(0,0,0,.55), rgba(0,0,0,.25) ); border-radius:10px; font-weight:600; letter-spacing:.3px; z-index:2; }
-    #localHint{ position:fixed; right:16px; top:16px; z-index:3; font-size:12px; opacity:.85; background:rgba(0,0,0,.6); padding:6px 8px; border-radius:8px; }
+    .banner{
+      position:fixed; top:20px; left:50%; transform:translateX(-50%); padding:8px 12px;
+      background:linear-gradient( to bottom, rgba(0,0,0,.55), rgba(0,0,0,.25) ); border-radius:10px; 
+      font-weight:600; letterspacing:.3px; z-index:2;
+    }
+    #localHint{
+      position:fixed; right:16px; top:16px; z-index:3; font-size:12px; opacity:.85;
+      background:rgba(0,0,0,.6); padding:6px 8px; border-radius:8px;
+    }
   </style>
 </head>
 <body>
@@ -94,7 +157,7 @@
 
   <!-- HERO med to bildelag (melt + sharp) og neon-oversminke -->
   <div id="hero">
-    <img id="heroMelt" src="kristian.jpg" alt="Bursdagsbarnet" />
+    <img id="heroMelt"  src="kristian.jpg" alt="Bursdagsbarnet" />
     <img id="heroSharp" src="kristian.jpg" alt="Bursdagsbarnet" />
     <div id="neon"></div>
   </div>
@@ -103,8 +166,13 @@
   <svg width="0" height="0" style="position:absolute">
     <defs>
       <filter id="melt">
-        <feTurbulence id="turb" type="fractalNoise" baseFrequency="0.008 0.02" numOctaves="2" seed="7" result="noise"/>
-        <feDisplacementMap id="disp" in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G"/>
+        <feTurbulence id="turb" type="fractalNoise"
+          baseFrequency="0.008 0.02"
+          numOctaves="2" seed="7" result="noise"/>
+        <feDisplacementMap id="disp"
+          in="SourceGraphic" in2="noise"
+          scale="0"
+          xChannelSelector="R" yChannelSelector="G"/>
       </filter>
     </defs>
   </svg>
@@ -128,19 +196,43 @@
     // YouTube Player
     let player; 
     function onYouTubeIframeAPIReady(){
-      player = new YT.Player('player', { videoId: YT_VIDEO_ID, playerVars: { autoplay: 1, controls: 0, mute: 1, start: 0, rel: 0, modestbranding: 1, playsinline: 1, loop: 1, playlist: YT_VIDEO_ID }, events: { onReady: onPlayerReady, onStateChange: onPlayerStateChange } });
+      player = new YT.Player('player', {
+        videoId: YT_VIDEO_ID,
+        playerVars: {
+          autoplay: 1, controls: 0, mute: 1, start: 0, rel: 0,
+          modestbranding: 1, playsinline: 1, loop: 1, playlist: YT_VIDEO_ID
+        },
+        events: { onReady: onPlayerReady, onStateChange: onPlayerStateChange }
+      });
     }
-    function onPlayerReady(){ try { player.getIframe().setAttribute('allow', 'autoplay; encrypted-media'); } catch(e){} player.playVideo(); tick(); }
-    function onPlayerStateChange(e){ if(e.data === YT.PlayerState.ENDED) player.playVideo(); }
+    function onPlayerReady(){
+      try { player.getIframe().setAttribute('allow', 'autoplay; encrypted-media'); } catch(e){}
+      player.playVideo();
+      tick();
+    }
+    function onPlayerStateChange(e){
+      if(e.data === YT.PlayerState.ENDED) player.playVideo();
+    }
 
     // Kontroller
     const soundBtn = document.getElementById('soundBtn');
-    function enableSound(){ if(!player) return; try{ player.mute(); player.playVideo(); player.unMute(); player.setVolume(100); player.playVideo(); }catch(err){} soundBtn.classList.add('hide'); window.removeEventListener('touchstart', enableSound); }
+    function enableSound(){
+      if(!player) return;
+      try{
+        player.mute();
+        player.playVideo();
+        player.unMute();
+        player.setVolume(100);
+        player.playVideo();
+      }catch(err){}
+      soundBtn.classList.add('hide');
+      window.removeEventListener('touchstart', enableSound);
+    }
     soundBtn.addEventListener('click', enableSound);
     window.addEventListener('touchstart', enableSound, { once:true });
 
     // DOM refs
-    const hero = document.getElementById('hero');
+    const hero     = document.getElementById('hero');
     const imgSharp = document.getElementById('heroSharp');
     const imgMelt  = document.getElementById('heroMelt');
     const neon     = document.getElementById('neon');
@@ -149,45 +241,65 @@
 
     // Beat + melt
     const beatInterval = 60 / BPM;
-    let lastBeat = 0;
-    let meltOn = false;
+    let lastBeat  = 0;
+    let meltOn    = false;
     let meltStart = 0;
     let beatPulse = 0;
 
     function lerp(a,b,t){ return a + (b - a) * t; }
 
     function tick(){
-      if(!player || typeof player.getCurrentTime !== 'function'){ return requestAnimationFrame(tick); }
+      if(!player || typeof player.getCurrentTime !== 'function'){
+        return requestAnimationFrame(tick);
+      }
       const t = player.getCurrentTime();
 
       if(t < DROP_TIME){
+        // Før dropp: skaler fra lite til 1.0
         const p = Math.min(1, t / DROP_TIME);
         const scale = lerp(0.15, 1.00, p);
         hero.style.transform = `translate(-50%,-50%) scale(${scale.toFixed(3)})`;
         hero.classList.remove('beat');
       } else {
-        if(!hero.classList.contains('neon-active')) hero.classList.add('neon-active');
-        if(!meltOn){ meltOn = true; meltStart = performance.now()/1000; hero.classList.add('melt-active'); }
+        // Etter dropp
+        if(!hero.classList.contains('neon-active')){
+          hero.classList.add('neon-active');
+        }
 
-        if(lastBeat === 0){ lastBeat = t; hero.classList.remove('beat'); }
+        // Start melt (subtil) ved dropp
+        if(!meltOn){
+          meltOn = true;
+          meltStart = performance.now()/1000;
+          hero.classList.add('melt-on');
+        }
+
+        // Beat-puls
+        if(lastBeat === 0){
+          lastBeat = t;
+          hero.classList.remove('beat');
+        }
         if(t - lastBeat >= beatInterval){
           const skips = Math.max(1, Math.floor((t - lastBeat) / beatInterval));
           lastBeat += beatInterval * skips;
           hero.classList.remove('beat'); void hero.offsetWidth; hero.classList.add('beat');
-          beatPulse = 12; // sterkere ring/glow-boost per beat
+          beatPulse = 6; // juster opp/ned for hvor mye melt skal reagere per beat
         }
       }
 
+      // Melt-animasjon
       if(meltOn){
         const now = performance.now()/1000;
         const dt  = Math.max(0, now - meltStart);
-        const baseScale = Math.min(40, dt * 18);
-        beatPulse *= 0.88;
-        const wiggle = 6 * Math.sin((t - DROP_TIME) * 2.0);
+
+        // Base smelte-intensitet – hold den relativt lav så personen fortsatt er tydelig
+        const baseScale = Math.min(18, dt * 8); // maks 18; juster ned til 12 hvis du vil ha roligere
+        beatPulse *= 0.90;
+        const wiggle = 3 * Math.sin((t - DROP_TIME) * 2.0);
         const scale  = Math.max(0, baseScale + beatPulse + wiggle);
         disp.setAttribute('scale', scale.toFixed(1));
-        const fx = 0.008 + 0.006 * (0.5 + 0.5 * Math.sin((t - DROP_TIME) * 0.9));
-        const fy = 0.020 + 0.010 * (0.5 + 0.5 * Math.cos((t - DROP_TIME) * 1.1));
+
+        const fx = 0.008 + 0.004 * (0.5 + 0.5 * Math.sin((t - DROP_TIME) * 0.9));
+        const fy = 0.020 + 0.006 * (0.5 + 0.5 * Math.cos((t - DROP_TIME) * 1.1));
         turb.setAttribute('baseFrequency', fx.toFixed(4) + ' ' + fy.toFixed(4));
       }
 
