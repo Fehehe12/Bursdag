@@ -21,7 +21,7 @@
       min-width:100vw; min-height:56.25vw; /* 100 * 9/16 = 56.25 */
     }
 
-    /* ——— HERO (wrapper + to lag bilde + neon) ——— */
+    /* ——— HERO (wrapper + bilde + neon) ——— */
     #hero{
       position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.15);
       width:50vmin; height:50vmin; border-radius:16px; overflow:hidden; z-index:2;
@@ -29,22 +29,7 @@
       transition:box-shadow 0.18s ease-out, filter 0.18s ease-out;
       will-change:transform, box-shadow, filter;
     }
-    #hero img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
-    /* Nederste lag: smelte-versjon (filter på) */
-    #heroMelt{ opacity:0; filter:url(#melt); }
-    /* Øverste lag: skarp versjon */
-    #heroSharp{ z-index:1; }
-
-    /* På dropp: vis smelte-laget, behold skarp kjerne via maske */
-    .melt-active #heroMelt{ opacity:1; transition:opacity .5s ease; }
-    .melt-active #heroSharp{
-      /* hold ansikt/kjerne skarp – maske som bevarer midten mer enn kantene */
-      -webkit-mask-image: radial-gradient(circle at 50% 45%, #fff 0 38%, rgba(255,255,255,0) 70%);
-              mask-image: radial-gradient(circle at 50% 45%, #fff 0 38%, rgba(255,255,255,0) 70%);
-      -webkit-mask-repeat: no-repeat; mask-repeat:no-repeat;
-      -webkit-mask-size: 100% 100%; mask-size:100% 100%;
-      transition: -webkit-mask-size .6s ease, mask-size .6s ease;
-    }
+    #hero img{ width:100%; height:100%; object-fit:cover; display:block; }
 
     /* Neon overlay: flere lag av radial/conic-gradients som flyter og bytter farge */
     #neon{
@@ -113,38 +98,22 @@
   <!-- Bakgrunnsvideo -->
   <div class="video-bg"><div id="player"></div></div>
 
-  <!-- HERO med to bildelag (melt + sharp) og neon-oversminke -->
+  <!-- HERO med bilde og neon-oversminke -->
   <div id="hero">
-    <img id="heroMelt" src="kristian.jpg" alt="Bursdagsbarnet" />
-    <img id="heroSharp" src="kristian.jpg" alt="Bursdagsbarnet" />
+    <!-- VIKTIG: Filnavnet MÅ stemme 100 % med det som ligger i GitHub -->
+    <img id="heroImage" src="kristian.jpg" alt="Bursdagsbarnet" />
     <div id="neon"></div>
   </div>
-
-  <!-- SVG-filter for smelteeffekt (turbulens + displacement) -->
-  <svg width="0" height="0" style="position:absolute">
-    <defs>
-      <filter id="melt">
-        <feTurbulence id="turb" type="fractalNoise" baseFrequency="0.008 0.02" numOctaves="2" seed="7" result="noise"/>
-        <feDisplacementMap id="disp" in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G"/>
-      </filter>
-    </defs>
-  </svg>
 
   <button id="soundBtn" type="button">Start musikk 🔊</button>
 
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
-    // ————————————————————————————————————————————————
-    // KONFIG (satt etter din video):
-    // Video: https://www.youtube.com/watch?v=NYVg-V8-7q0
-    // Drop: 1 min 25,5 sek (85.5s)
-    // BPM: 122
-    // ————————————————————————————————————————————————
+    // KONFIG
     const YT_VIDEO_ID = 'NYVg-V8-7q0';
-    const DROP_TIME   = 85.5; // sekunder
-    const BPM         = 122;  // ca. tempo etter dropp
+    const DROP_TIME   = 85.5;
+    const BPM         = 122;
 
-    // Varsel hvis file://
     if(location.protocol === 'file:'){
       const hint = document.createElement('div');
       hint.id = 'localHint';
@@ -152,7 +121,6 @@
       document.body.appendChild(hint);
     }
 
-    // ——— YouTube Player ———
     let player; 
     function onYouTubeIframeAPIReady(){
       player = new YT.Player('player', {
@@ -171,7 +139,6 @@
     }
     function onPlayerStateChange(e){ if(e.data === YT.PlayerState.ENDED) player.playVideo(); }
 
-    // ——— Kontroller ———
     const soundBtn = document.getElementById('soundBtn');
     function enableSound(){
       if(!player) return;
@@ -184,20 +151,12 @@
     soundBtn.addEventListener('click', enableSound);
     window.addEventListener('touchstart', enableSound, { once:true });
 
-    // ——— DOM: hero/bilder/neon/filter ———
     const hero = document.getElementById('hero');
-    const imgSharp = document.getElementById('heroSharp');
-    const imgMelt  = document.getElementById('heroMelt');
-    const neon     = document.getElementById('neon');
-    const turb     = document.getElementById('turb');
-    const disp     = document.getElementById('disp');
+    const img  = document.getElementById('heroImage');
+    const neon = document.getElementById('neon');
 
-    // ——— Beat + neon + melt ———
-    const beatInterval = 60 / BPM; // sekunder per beat
+    const beatInterval = 60 / BPM;
     let lastBeat = 0;
-    let meltOn = false;          // aktiveres ved dropp
-    let meltStart = 0;           // tidspunkt for start (sek)
-    let beatPulse = 0;           // ekstra boost pr beat
 
     function lerp(a,b,t){ return a + (b - a) * t; }
 
@@ -205,43 +164,22 @@
       if(!player || typeof player.getCurrentTime !== 'function'){ return requestAnimationFrame(tick); }
       const t = player.getCurrentTime();
 
-      // Før droppet: skaler HERO jevnt fra 0.15 → 1.00
       if(t < DROP_TIME){
         const p = Math.min(1, t / DROP_TIME);
         const scale = lerp(0.15, 1.00, p);
         hero.style.transform = `translate(-50%,-50%) scale(${scale.toFixed(3)})`;
         hero.classList.remove('beat');
       } else {
-        // Slå på neon og melt når droppet inntreffer (kun én gang)
-        if(!hero.classList.contains('neon-active')) hero.classList.add('neon-active');
-        if(!meltOn){ meltOn = true; meltStart = performance.now()/1000; hero.classList.add('melt-active'); }
-
-        // Beat-puls
+        if(!hero.classList.contains('neon-active')){
+          hero.classList.add('neon-active');
+        }
         if(lastBeat === 0){ lastBeat = t; hero.classList.remove('beat'); }
         if(t - lastBeat >= beatInterval){
           const skips = Math.max(1, Math.floor((t - lastBeat) / beatInterval));
           lastBeat += beatInterval * skips;
           hero.classList.remove('beat'); void hero.offsetWidth; hero.classList.add('beat');
-          beatPulse = 10; // legg på litt ekstra displacement på hvert slag
         }
       }
-
-      // Hvis melt er aktiv: animer turbulens + displacement
-      if(meltOn){
-        const now = performance.now()/1000;
-        const dt  = Math.max(0, now - meltStart);
-        // Øk displacement gradvis, så vugger den litt
-        const baseScale = Math.min(35, dt * 18);              // vokser raskt opp til 35
-        beatPulse *= 0.88;                                    // avtar mellom slag
-        const wiggle = 6 * Math.sin((t - DROP_TIME) * 2.0);   // liten bølge
-        const scale  = Math.max(0, baseScale + beatPulse + wiggle);
-        disp.setAttribute('scale', scale.toFixed(1));
-        // Flytt «væsken»: endre baseFrequency over tid
-        const fx = 0.008 + 0.006 * (0.5 + 0.5 * Math.sin((t - DROP_TIME) * 0.9));
-        const fy = 0.020 + 0.010 * (0.5 + 0.5 * Math.cos((t - DROP_TIME) * 1.1));
-        turb.setAttribute('baseFrequency', fx.toFixed(4) + ' ' + fy.toFixed(4));
-      }
-
       requestAnimationFrame(tick);
     }
   </script>
