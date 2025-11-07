@@ -84,12 +84,6 @@
     }
     #soundBtn.hide{ opacity:0; transform:translate(-50%, 10px); pointer-events:none; transition:all .28s ease; }
 
-    #imgBtn{
-      position:fixed; left:20px; bottom:20px; z-index:10; padding:8px 12px;
-      border:0; border-radius:10px; cursor:pointer; background:rgba(255,255,255,0.85); color:#111; font-weight:600;
-      box-shadow:0 8px 24px rgba(0,0,0,.3);
-    }
-
     .banner{ position:fixed; top:20px; left:50%; transform:translateX(-50%); padding:8px 12px;
       background:linear-gradient( to bottom, rgba(0,0,0,.55), rgba(0,0,0,.25) ); border-radius:10px; 
       font-weight:600; letter-spacing:.3px; z-index:2; }
@@ -106,27 +100,20 @@
 
   <!-- HERO med bilde og neon-oversminke -->
   <div id="hero">
+    <!-- VIKTIG: Filnavnet MÅ stemme 100 % med det som ligger i GitHub -->
     <img id="heroImage" src="kristian.jpg" alt="Bursdagsbarnet" />
     <div id="neon"></div>
   </div>
 
   <button id="soundBtn" type="button">Start musikk 🔊</button>
 
-
-
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
-    // ————————————————————————————————————————————————
-    // KONFIG (satt etter din video):
-    // Video: https://www.youtube.com/watch?v=NYVg-V8-7q0
-    // Drop: 1 min 25,5 sek (85.5s)
-    // BPM: 122
-    // ————————————————————————————————————————————————
+    // KONFIG
     const YT_VIDEO_ID = 'NYVg-V8-7q0';
-    const DROP_TIME   = 85.5; // sekunder
-    const BPM         = 122;  // ca. tempo etter dropp
+    const DROP_TIME   = 85.5;
+    const BPM         = 122;
 
-    // Varsel hvis file://
     if(location.protocol === 'file:'){
       const hint = document.createElement('div');
       hint.id = 'localHint';
@@ -134,7 +121,6 @@
       document.body.appendChild(hint);
     }
 
-    // ——— YouTube Player ———
     let player; 
     function onYouTubeIframeAPIReady(){
       player = new YT.Player('player', {
@@ -153,7 +139,6 @@
     }
     function onPlayerStateChange(e){ if(e.data === YT.PlayerState.ENDED) player.playVideo(); }
 
-    // ——— Kontroller ———
     const soundBtn = document.getElementById('soundBtn');
     function enableSound(){
       if(!player) return;
@@ -166,23 +151,11 @@
     soundBtn.addEventListener('click', enableSound);
     window.addEventListener('touchstart', enableSound, { once:true });
 
-    // ——— DOM: hero/bilde ———
     const hero = document.getElementById('hero');
     const img  = document.getElementById('heroImage');
     const neon = document.getElementById('neon');
 
-    const imgBtn = document.getElementById('imgBtn');
-    const imgInput = document.getElementById('imgInput');
-    imgBtn.addEventListener('click', ()=> imgInput.click());
-    imgInput.addEventListener('change', (e)=>{
-      const file = e.target.files && e.target.files[0];
-      if(!file) return;
-      const url = URL.createObjectURL(file);
-      img.src = url; imgBtn.textContent = 'Bytt bilde';
-    });
-
-    // ——— Beat + neon ———
-    const beatInterval = 60 / BPM; // sekunder per beat
+    const beatInterval = 60 / BPM;
     let lastBeat = 0;
 
     function lerp(a,b,t){ return a + (b - a) * t; }
@@ -191,18 +164,15 @@
       if(!player || typeof player.getCurrentTime !== 'function'){ return requestAnimationFrame(tick); }
       const t = player.getCurrentTime();
 
-      // Før droppet: skaler HERO jevnt fra 0.15 → 1.00
       if(t < DROP_TIME){
         const p = Math.min(1, t / DROP_TIME);
         const scale = lerp(0.15, 1.00, p);
         hero.style.transform = `translate(-50%,-50%) scale(${scale.toFixed(3)})`;
         hero.classList.remove('beat');
       } else {
-        // Slå på neon når droppet inntreffer (kun én gang)
         if(!hero.classList.contains('neon-active')){
           hero.classList.add('neon-active');
         }
-        // Pulser i takt med BPM (approx)
         if(lastBeat === 0){ lastBeat = t; hero.classList.remove('beat'); }
         if(t - lastBeat >= beatInterval){
           const skips = Math.max(1, Math.floor((t - lastBeat) / beatInterval));
