@@ -6,99 +6,74 @@
   <title>Bursdag! 🎉</title>
   <style>
     /* ——— Grunnoppsett ——— */
-    :root{ --glow: rgba(255,255,255,0.9); --bpm:122; }
+    :root{ --glow: rgba(255,255,255,0.9); }
     html,body{ height:100%; margin:0; background:#000; overflow:hidden; }
     body{ font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial; color:#fff; }
 
     /* ——— YouTube som fullskjerms bakgrunn ——— */
-    .video-bg{
-      position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
-    }
-    .video-bg iframe{ 
-      position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
-      /* Cover-triks: behold 16:9 og dekk hele skjermen */
-      width:177.78vh; height:100vh; /* 100 * 16/9 = 177.78 */
-      min-width:100vw; min-height:56.25vw; /* 100 * 9/16 = 56.25 */
-    }
+    .video-bg{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+    .video-bg iframe{ position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
+      width:177.78vh; height:100vh; min-width:100vw; min-height:56.25vw; }
 
-    /* ——— HERO (wrapper + bilde + neon) ——— */
-    #hero{
-      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.15);
+    /* ——— HERO (to bildelag + neon) ——— */
+    #hero{ position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.15);
       width:50vmin; height:50vmin; border-radius:16px; overflow:hidden; z-index:2;
-      box-shadow:0 0 0 rgba(255,255,255,0);
-      transition:box-shadow 220ms ease, filter 220ms ease;
-      will-change:transform, box-shadow, filter;
-    }
-    #hero img{ width:100%; height:100%; object-fit:cover; display:block; }
+      box-shadow:0 0 0 rgba(255,255,255,0); transition:box-shadow 0.18s ease-out, filter 0.18s ease-out;
+      will-change:transform, box-shadow, filter; }
+    #hero img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+    #heroMelt{ opacity:0; filter:url(#melt); transition:opacity .6s ease; }
+    #heroSharp{ z-index:1; transition:opacity .9s ease; }
 
-    /* Neon overlay: flere lag av radial/conic-gradients som flyter og bytter farge */
-    #neon{
-      position:absolute; inset:-12%; border-radius:inherit; pointer-events:none;
-      mix-blend-mode:screen; opacity:0; /* blir 1 ved dropp */
+    /* Slå på full melt etter dropp */
+    .melt-active #heroMelt{ opacity:1; }
+    .full-melt   #heroSharp{ opacity:0; }
+
+    /* Neon overlay (flyter og hue-roterer etter dropp) */
+    #neon{ position:absolute; inset:-12%; border-radius:inherit; pointer-events:none; mix-blend-mode:screen; opacity:0;
       background:
         radial-gradient(35% 35% at 20% 30%, rgba(0,255,213,0.65), transparent 60%),
         radial-gradient(30% 30% at 80% 25%, rgba(255,0,153,0.60), transparent 60%),
         radial-gradient(28% 28% at 50% 80%, rgba(255,255,0,0.55), transparent 60%),
         conic-gradient(from 0deg at 50% 50%, rgba(0,255,255,0.25), rgba(255,0,255,0.25), rgba(255,255,0,0.25), rgba(0,255,255,0.25));
-      filter: blur(22px) saturate(1.9) brightness(1.2);
-      transition:filter 160ms ease;
+      filter: blur(22px) saturate(1.9) brightness(1.2); }
+
+    /* ——— BEAT-PULS ——— */
+    #hero::after{ content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; border:3px solid rgba(255,255,255,0.85); opacity:0; transform:scale(1); }
+    #hero.beat{ animation:shake 120ms ease-in-out; }
+    #hero.beat::after{ animation:pulseRing 280ms ease-out; }
+    #hero.beat #neon{ filter: blur(26px) saturate(2.15) brightness(1.35); }
+    #hero.beat #heroSharp{ filter:contrast(1.06) saturate(1.08); }
+
+    @keyframes pulseRing{ from{ opacity:.9; transform:scale(1);} to{ opacity:0; transform:scale(1.28);} }
+    @keyframes shake{
+      0%{   transform:translate(-50%,-50%) scale(1.05) rotate(-0.4deg); }
+      25%{  transform:translate(calc(-50% - 4px), calc(-50% + 2px)) scale(1.03) rotate(0.6deg); }
+      50%{  transform:translate(calc(-50% + 3px), calc(-50% - 3px)) scale(1.06) rotate(-0.5deg); }
+      75%{  transform:translate(calc(-50% - 2px), calc(-50% - 1px)) scale(1.03) rotate(0.3deg); }
+      100%{ transform:translate(-50%,-50%) scale(1.05) rotate(0deg); }
     }
 
-    /* ——— Smooth beat: myk zoom + glow, ingen risting ——— */
-    #hero.beat{
-      /* varighet = ett beat (60/BPM) */
-      animation: softBeat calc(60s / var(--bpm)) cubic-bezier(.2,.75,.2,1);
-      box-shadow:
-        0 0 24px rgba(255,255,255,.42),
-        0 0 60px rgba(255,0,200,.18),
-        0 0 100px rgba(255,255,0,.10);
-    }
-    #hero.beat #neon{
-      filter: blur(24px) saturate(2.0) brightness(1.28);
-    }
+    /* Neon aktiveres etter dropp */
+    .neon-active #neon{ opacity:1; animation: neonFlow 5.2s linear infinite, neonHue 6.5s linear infinite; }
+    @keyframes neonFlow{ 0%{background-position:0% 0%,100% 0%,50% 100%,50% 50%}25%{background-position:50% 50%,50% 100%,0% 50%,50% 50%}50%{background-position:100% 0%,0% 100%,50% 0%,50% 50%}75%{background-position:50% 50%,100% 50%,100% 100%,50% 50%}100%{background-position:0% 0%,100% 0%,50% 100%,50% 50%}}
+    @keyframes neonHue{ 0%{ filter:hue-rotate(0deg)   blur(22px) saturate(1.9) brightness(1.2)} 100%{ filter:hue-rotate(360deg) blur(22px) saturate(1.9) brightness(1.2)} }
 
-    @keyframes softBeat{
-      /* bygger rundt base-transform: translate(-50%,-50%) scale(1) etter dropp */
-      0%   { transform:translate(-50%,-50%) scale(1.000); filter:saturate(1) contrast(1); }
-      35%  { transform:translate(-50%,-50%) scale(1.035); filter:saturate(1.06) contrast(1.04); }
-      60%  { transform:translate(-50%,-50%) scale(1.015); }
-      100% { transform:translate(-50%,-50%) scale(1.000); }
-    }
-
-    /* Flytende neon: posisjon + hue-rotasjon aktiveres etter dropp */
-    .neon-active #neon{
-      opacity:1;
-      animation:
-        neonFlow 5.2s linear infinite,
-        neonHue 6.5s linear infinite;
-    }
-    @keyframes neonFlow{
-      0%{   background-position: 0% 0%, 100% 0%, 50% 100%, 50% 50%; }
-      25%{  background-position: 50% 50%, 50% 100%, 0% 50%, 50% 50%; }
-      50%{  background-position: 100% 0%, 0% 100%, 50% 0%, 50% 50%; }
-      75%{  background-position: 50% 50%, 100% 50%, 100% 100%, 50% 50%; }
-      100%{ background-position: 0% 0%, 100% 0%, 50% 100%, 50% 50%; }
-    }
-    @keyframes neonHue{
-      0%{   filter: hue-rotate(0deg)   blur(22px) saturate(1.9) brightness(1.2); }
-      100%{ filter: hue-rotate(360deg) blur(22px) saturate(1.9) brightness(1.2); }
-    }
+    /* ——— STOR FESTBOKS ——— */
+    #bigBox{ position:fixed; left:50%; top:10%; transform:translate(-50%, -10%) scale(.9); z-index:5; max-width:90vw;
+      padding:18px 28px; border-radius:18px; text-align:center; letter-spacing:1px; line-height:1.1; opacity:0; pointer-events:none;
+      background:rgba(0,0,0,.45); border:4px solid rgba(255,255,255,.85); box-shadow:0 0 40px rgba(255,255,255,.35), 0 0 120px rgba(255,0,200,.25);
+      font-weight:900; font-size:clamp(20px,4.5vw,58px); text-transform:uppercase; text-shadow:0 2px 10px rgba(0,0,0,.6), 0 0 12px rgba(255,255,255,.5); }
+    #bigBox .small{ display:block; font-size:clamp(16px,2.6vw,30px); opacity:.95; margin-top:.35em; }
+    #bigBox.show{ opacity:1; transform:translate(-50%, 0%) scale(1); transition:opacity .6s ease, transform .6s ease; }
+    #bigBox.beat{ animation:boxBeat 220ms ease-out; }
+    @keyframes boxBeat{ from{ transform:translate(-50%, 0%) scale(1.02)} to{ transform:translate(-50%, 0%) scale(1)} }
 
     /* ——— Kontroller ——— */
-    #soundBtn{
-      position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
-      padding:12px 18px; border:0; border-radius:999px; cursor:pointer; z-index:10;
-      background:rgba(255,255,255,0.92); color:#111; box-shadow:0 10px 30px rgba(0,0,0,.25);
-      font-weight:700;
-    }
+    #soundBtn{ position:fixed; left:50%; bottom:24px; transform:translateX(-50%); padding:12px 18px; border:0; border-radius:999px; cursor:pointer; z-index:10; background:rgba(255,255,255,0.92); color:#111; box-shadow:0 10px 30px rgba(0,0,0,.25); font-weight:700; }
     #soundBtn.hide{ opacity:0; transform:translate(-50%, 10px); pointer-events:none; transition:all .28s ease; }
 
-    .banner{ position:fixed; top:20px; left:50%; transform:translateX(-50%); padding:8px 12px;
-      background:linear-gradient( to bottom, rgba(0,0,0,.55), rgba(0,0,0,.25) ); border-radius:10px; 
-      font-weight:600; letter-spacing:.3px; z-index:2; }
-
-    #localHint{ position:fixed; right:16px; top:16px; z-index:3; font-size:12px; opacity:.85;
-      background:rgba(0,0,0,.6); padding:6px 8px; border-radius:8px; }
+    .banner{ position:fixed; top:20px; left:50%; transform:translateX(-50%); padding:8px 12px; background:linear-gradient( to bottom, rgba(0,0,0,.55), rgba(0,0,0,.25) ); border-radius:10px; font-weight:600; letter-spacing:.3px; z-index:2; }
+    #localHint{ position:fixed; right:16px; top:16px; z-index:3; font-size:12px; opacity:.85; background:rgba(0,0,0,.6); padding:6px 8px; border-radius:8px; }
   </style>
 </head>
 <body>
@@ -107,12 +82,28 @@
   <!-- Bakgrunnsvideo -->
   <div class="video-bg"><div id="player"></div></div>
 
-  <!-- HERO med bilde og neon-oversminke -->
+  <!-- HERO med to bildelag (melt + sharp) og neon-oversminke -->
   <div id="hero">
-    <!-- VIKTIG: Filnavnet MÅ stemme 100 % med det som ligger i GitHub -->
-    <img id="heroImage" src="kristian.jpg" alt="Bursdagsbarnet" />
+    <img id="heroMelt" src="kristian.jpg" alt="Bursdagsbarnet" />
+    <img id="heroSharp" src="kristian.jpg" alt="Bursdagsbarnet" />
     <div id="neon"></div>
   </div>
+
+  <!-- Stor tekstboks -->
+  <div id="bigBox">
+    GRALLA ME DAGEN HINNA!<br>
+    <span class="small">FREDAG! KOS DEG SOM FAEN!</span>
+  </div>
+
+  <!-- SVG-filter for smelteeffekt -->
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <filter id="melt">
+        <feTurbulence id="turb" type="fractalNoise" baseFrequency="0.008 0.02" numOctaves="2" seed="7" result="noise"/>
+        <feDisplacementMap id="disp" in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>
+  </svg>
 
   <button id="soundBtn" type="button">Start musikk 🔊</button>
 
@@ -120,11 +111,8 @@
   <script>
     // KONFIG
     const YT_VIDEO_ID = 'NYVg-V8-7q0';
-    const DROP_TIME   = 85.5;
+    const DROP_TIME   = 85.5; // sek
     const BPM         = 122;
-
-    // sett CSS-variabel for BPM så animasjonslengden følger låta
-    document.documentElement.style.setProperty('--bpm', BPM);
 
     if(location.protocol === 'file:'){
       const hint = document.createElement('div');
@@ -133,41 +121,36 @@
       document.body.appendChild(hint);
     }
 
+    // YouTube Player
     let player; 
     function onYouTubeIframeAPIReady(){
-      player = new YT.Player('player', {
-        videoId: YT_VIDEO_ID,
-        playerVars: {
-          autoplay: 1, controls: 0, mute: 1, start: 0, rel: 0,
-          modestbranding: 1, playsinline: 1, loop: 1, playlist: YT_VIDEO_ID
-        },
-        events: { onReady: onPlayerReady, onStateChange: onPlayerStateChange }
-      });
+      player = new YT.Player('player', { videoId: YT_VIDEO_ID, playerVars: { autoplay: 1, controls: 0, mute: 1, start: 0, rel: 0, modestbranding: 1, playsinline: 1, loop: 1, playlist: YT_VIDEO_ID }, events: { onReady: onPlayerReady, onStateChange: onPlayerStateChange } });
     }
-    function onPlayerReady(){
-      try { player.getIframe().setAttribute('allow', 'autoplay; encrypted-media'); } catch(e){}
-      player.playVideo();
-      tick();
-    }
+    function onPlayerReady(){ try { player.getIframe().setAttribute('allow', 'autoplay; encrypted-media'); } catch(e){} player.playVideo(); tick(); }
     function onPlayerStateChange(e){ if(e.data === YT.PlayerState.ENDED) player.playVideo(); }
 
+    // Kontroller
     const soundBtn = document.getElementById('soundBtn');
-    function enableSound(){
-      if(!player) return;
-      try{
-        player.mute(); player.playVideo(); player.unMute(); player.setVolume(100); player.playVideo();
-      }catch(err){}
-      soundBtn.classList.add('hide');
-      window.removeEventListener('touchstart', enableSound);
-    }
+    function enableSound(){ if(!player) return; try{ player.mute(); player.playVideo(); player.unMute(); player.setVolume(100); player.playVideo(); }catch(err){} soundBtn.classList.add('hide'); window.removeEventListener('touchstart', enableSound); }
     soundBtn.addEventListener('click', enableSound);
     window.addEventListener('touchstart', enableSound, { once:true });
 
+    // DOM refs
     const hero = document.getElementById('hero');
-    const neon = document.getElementById('neon');
+    const imgSharp = document.getElementById('heroSharp');
+    const imgMelt  = document.getElementById('heroMelt');
+    const neon     = document.getElementById('neon');
+    const turb     = document.getElementById('turb');
+    const disp     = document.getElementById('disp');
+    const bigBox   = document.getElementById('bigBox');
 
+    // Beat + melt
     const beatInterval = 60 / BPM;
     let lastBeat = 0;
+    let meltOn = false;
+    let meltStart = 0;
+    let beatPulse = 0;
+    let fullMeltTimerStarted = false;
 
     function lerp(a,b,t){ return a + (b - a) * t; }
 
@@ -181,17 +164,44 @@
         hero.style.transform = `translate(-50%,-50%) scale(${scale.toFixed(3)})`;
         hero.classList.remove('beat');
       } else {
-        if(!hero.classList.contains('neon-active')){
-          hero.classList.add('neon-active');
+        // Aktiver neon + melt ved dropp
+        if(!hero.classList.contains('neon-active')) hero.classList.add('neon-active');
+        if(!meltOn){
+          meltOn = true; meltStart = performance.now()/1000; hero.classList.add('melt-active');
+          // Vis stor tekstboks
+          bigBox.classList.add('show');
+          // Etter en kort stund: full melt (skjul skarpt lag)
+          if(!fullMeltTimerStarted){
+            fullMeltTimerStarted = true;
+            setTimeout(()=>{ hero.classList.add('full-melt'); }, 1100);
+          }
         }
-        if(lastBeat === 0){ lastBeat = t; hero.classList.remove('beat'); }
+
+        // Beat-puls (på hero + boks)
+        if(lastBeat === 0){ lastBeat = t; hero.classList.remove('beat'); bigBox.classList.remove('beat'); }
         if(t - lastBeat >= beatInterval){
           const skips = Math.max(1, Math.floor((t - lastBeat) / beatInterval));
           lastBeat += beatInterval * skips;
-          // restart den myke beat-animasjonen
           hero.classList.remove('beat'); void hero.offsetWidth; hero.classList.add('beat');
+          bigBox.classList.remove('beat'); void bigBox.offsetWidth; bigBox.classList.add('beat');
+          beatPulse = 12; // ring/glow-boost per beat
         }
       }
+
+      if(meltOn){
+        const now = performance.now()/1000;
+        const dt  = Math.max(0, now - meltStart);
+        // Øk displacement gradvis, med litt bølge + beat-boost
+        const baseScale = Math.min(40, dt * 18);
+        beatPulse *= 0.88;
+        const wiggle = 6 * Math.sin((t - DROP_TIME) * 2.0);
+        const scale  = Math.max(0, baseScale + beatPulse + wiggle);
+        disp.setAttribute('scale', scale.toFixed(1));
+        const fx = 0.008 + 0.006 * (0.5 + 0.5 * Math.sin((t - DROP_TIME) * 0.9));
+        const fy = 0.020 + 0.010 * (0.5 + 0.5 * Math.cos((t - DROP_TIME) * 1.1));
+        turb.setAttribute('baseFrequency', fx.toFixed(4) + ' ' + fy.toFixed(4));
+      }
+
       requestAnimationFrame(tick);
     }
   </script>
